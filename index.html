@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Cloudflare Workers OG Redirect Generator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 700px;
+      margin: 40px auto;
+      padding: 20px;
+    }
+    input, textarea, button {
+      width: 100%;
+      margin-top: 10px;
+      padding: 10px;
+      font-size: 16px;
+    }
+    textarea {
+      height: 300px;
+      font-family: monospace;
+    }
+    button {
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+    h1 {
+      color: #333;
+    }
+  </style>
+</head>
+<body>
+  <h1>OG Redirect Generator (Cloudflare Workers)</h1>
+
+  <label for="judul">Judul (og:title):</label>
+  <input type="text" id="judul" placeholder="Contoh: I just wanna be good for you">
+
+  <label for="gambar">Link Gambar (og:image):</label>
+  <input type="text" id="gambar" placeholder="https://example.com/image.jpg">
+
+  <label for="tujuan">URL Tujuan (Redirect):</label>
+  <input type="text" id="tujuan" placeholder="https://example.com/target">
+
+  <button onclick="generate()">Generate Script</button>
+
+  <label for="output">Hasil Script Workers:</label>
+  <textarea id="output" readonly></textarea>
+
+  <script>
+    function generate() {
+      const judul = document.getElementById('judul').value.trim();
+      const gambar = document.getElementById('gambar').value.trim();
+      const tujuan = document.getElementById('tujuan').value.trim();
+
+      if (!judul || !gambar || !tujuan) {
+        alert("Semua kolom harus diisi!");
+        return;
+      }
+
+      const script = `export default {
+  async fetch(request) {
+    const ua = request.headers.get("user-agent") || "";
+    const isBot = /facebookexternalhit|Twitterbot|ThreadsBot|WhatsApp/i.test(ua);
+
+    const html = \`<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>${judul}</title>
+  <meta property="og:title" content="${judul}" />
+  <meta property="og:description" content="" />
+  <meta property="og:image" content="${gambar}" />
+  <meta property="og:url" content="https://your-workers-subdomain.workers.dev" />
+</head>
+<body>
+  <script>
+    setTimeout(() => {
+      location.href = "${tujuan}";
+    }, 3000);
+  </script>
+  <p>Redirecting...</p>
+</body>
+</html>\`;
+
+    if (isBot) {
+      return new Response(html, {
+        headers: { "content-type": "text/html" },
+      });
+    }
+
+    return Response.redirect("${tujuan}", 302);
+  }
+};`;
+
+      document.getElementById('output').value = script;
+    }
+  </script>
+</body>
+</html>
